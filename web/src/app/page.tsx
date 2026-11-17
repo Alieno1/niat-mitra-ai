@@ -845,6 +845,17 @@ export default function HomePage() {
     }
   }
 
+  /** Lock background page scroll when mobile sidebar or AI assistant modal is open */
+  useEffect(() => {
+    const locked = sidebarOpen || assistantOpen;
+    document.documentElement.style.overflow = locked ? "hidden" : "";
+    document.body.style.overflow = locked ? "hidden" : "";
+    return () => {
+      document.documentElement.style.overflow = "";
+      document.body.style.overflow = "";
+    };
+  }, [sidebarOpen, assistantOpen]);
+
   /** Books a Campus Visit or marks Seat Reserved in Neon Postgres */
   async function handleStageUpdate(leadId: number, stage: string, slot?: string) {
     const res = await fetch(`/api/leads/${leadId}/stage`, {
@@ -868,14 +879,14 @@ export default function HomePage() {
       {/* Mobile Sidebar Overlay */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden"
+          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm overscroll-none touch-none lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
       {/* Sleek Sidebar: Warm Ivory/Gold in Light Mode, Dark Charcoal in Dark Mode */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col justify-between border-r p-5 shadow-2xl transition-transform duration-300 lg:static lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col justify-between overflow-y-auto overscroll-contain border-r p-5 shadow-2xl transition-transform duration-300 lg:static lg:translate-x-0 ${
           lightMode
             ? "border-[#C9A24D]/45 bg-[#FFFDF7] text-[#2A1C0E]"
             : "preserve-dark border-slate-800/80 bg-[#141820] text-slate-200"
@@ -3161,7 +3172,7 @@ export default function HomePage() {
       </div>
 
       {/* Floating AI Assistant Button (Burgundy+Gold Parchment/Obsidian on Portal | Emerald+Black on Dashboard/Pipeline/Campuses) */}
-      {!assistantOpen && (
+      {!assistantOpen && !sidebarOpen && (
         activeTab === "portal" ? (
           <button
             type="button"
