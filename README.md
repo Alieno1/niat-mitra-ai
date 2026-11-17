@@ -2,9 +2,6 @@
 
 > **Track B (Bottom-of-Funnel) AI-Native Growth System for NxtWave's NIAT Program: Tool-Calling Parent Verification Agent, 11-Language Voice Counselling, Live `niatindia.com` Accreditation Checks, WhatsApp Lifecycle Dispatch & Real-Time CAC Recovery Dashboard.**
 
-[![Author](https://img.shields.io/badge/Author-Himanshu%20Singh%20(NIT%20Surat%20CSE)-blue.svg)](https://www.linkedin.com/in/himanshu-singh-7ab162243/)
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-0A66C2?logo=linkedin)](https://www.linkedin.com/in/himanshu-singh-7ab162243/)
-[![Portfolio](https://img.shields.io/badge/Portfolio-hud--portfolio.vercel.app-black?logo=vercel)](https://hud-portfolio.vercel.app/)
 [![Live App](https://img.shields.io/badge/Live%20App-Vercel%20Production-brightgreen?logo=vercel)](https://web-vert-sigma-lqfl6yxi6c.vercel.app)
 [![Database](https://img.shields.io/badge/Database-Neon%20Serverless%20PostgreSQL-00e599?logo=postgresql)](https://neon.tech)
 [![AI Engine](https://img.shields.io/badge/AI%20Engine-OpenRouter%20Tool--Calling-blueviolet)](https://openrouter.ai)
@@ -254,3 +251,4 @@ Open `http://localhost:3000` in your browser. The database schema and 21 partner
 * **LinkedIn:** [linkedin.com/in/himanshu-singh-7ab162243](https://www.linkedin.com/in/himanshu-singh-7ab162243/)
 * **Portfolio:** [hud-portfolio.vercel.app](https://hud-portfolio.vercel.app/)
 * **Live Project:** [web-vert-sigma-lqfl6yxi6c.vercel.app](https://web-vert-sigma-lqfl6yxi6c.vercel.app)
+
