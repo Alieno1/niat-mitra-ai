@@ -11,9 +11,9 @@
 
 ## 🏆 Challenge Context
 
-Built for the **NxtWave Jr. Growth Manager — The Growth Hack Challenge (Round 2)**, where **85 students across PAN-India IIT and NIT campuses** were selected after clearing Round 1.
+Built for **The NxtWave Growth Hack Challenge (Round 2)** — a selective national AI & growth engineering hackathon where I was selected among the **top 85 builders PAN-India across premier IIT and NIT campuses** after clearing Round 1.
 
-The challenge brief asked builders to audit **NIAT** (*NxtWave Institute of Innovation in Advanced Technologies*), identify an unaddressed growth bottleneck, and ship a **working multi-component AI system** (minimum 3 connected components, real AI tool-calling, multi-lingual support, and live public-data integration) rather than a static strategy deck.
+The challenge brief asked selected finalists to deeply audit **NIAT** (*NxtWave Institute of Innovation in Advanced Technologies*), uncover an unaddressed funnel bottleneck, and architect & ship a **working multi-component AI system** (minimum 3 connected components, autonomous AI tool-calling, multi-lingual support, and live public-data verification) rather than a static strategy deck.
 
 ---
 
