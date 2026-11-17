@@ -1,7 +1,7 @@
 # Layer 2: Pick Your Track, Pick a New Avenue
 
 **Selected Track:** **Track B — Bottom-of-Funnel (Lead to Sale)**  
-**The Avenue:** **NIAT TrustBridge AI — Autonomous Vernacular Parent Closer & "Open Market" Lead Recovery Engine**
+**The Avenue:** **NIAT Mitra AI — Autonomous Vernacular Parent Closer & "Open Market" Lead Recovery Engine**
 
 ---
 
@@ -24,7 +24,7 @@ After a student pays ₹1,200 and qualifies in the **NAT exam**, NIAT's funnel e
 
 ## 3. Hypothesis (With Numbers)
 * **Baseline:** Suppose 2,000 NAT-qualified leads/month stall at the *Post-NAT $\rightarrow$ Campus Visit* stage (primarily due to parent skepticism on degree validity, fees, and Reddit/Quora doubts) and lapse into the 7-day Open Market.
-* **With TrustBridge AI:** Deploying an automated vernacular AI verification & ROI agent via WhatsApp/Web within 15 minutes of NAT qualification will:
+* **With NIAT Mitra AI:** Deploying an automated vernacular AI verification & ROI agent via WhatsApp/Web within 15 minutes of NAT qualification will:
   * Engage **40%** of stalled parents (**800 parents/month**) in their native language.
   * Convert **20%** of engaged families (**160 families/month**) into confirmed Campus Visits / 1:1 Interviews, and **25%** of those into Seat Reservations (**40 incremental enrollments/month**).
   * At an average blended CAC saving of ₹35,000/enrollment (vs. Category A/B consultant payouts), this recovers **₹14 Lakhs/month in CAC** plus **₹3.2+ Crore in annualized tuition LTV**.
@@ -34,7 +34,7 @@ After a student pays ₹1,200 and qualifies in the **NAT exam**, NIAT's funnel e
 ## 4. The One Experiment to Run First
 * **Scope:** Take **500 stalled NAT-qualified leads** from **Telangana/AP (Telugu) and Delhi-NCR/UP (Hindi)** who have not booked a Campus Visit within 48 hours of qualifying.
 * **Duration:** **14 days** (matching two 7-day NIAT attribution windows).
-* **Execution:** Trigger a personalized WhatsApp link to the **NIAT TrustBridge AI Portal** pre-loaded with the student's NAT score, nearest partner campus (e.g., Aurora/Chaitanya or Noida International Univ), UGC approval proof, and a native-language Parent Counsellor Agent. Route 50% to TrustBridge AI (Test) and 50% to standard human follow-up (Control).
+* **Execution:** Trigger a personalized WhatsApp link to the **NIAT Mitra AI Portal** pre-loaded with the student's NAT score, nearest partner campus (e.g., Aurora/Chaitanya or Noida International Univ), UGC approval proof, and a native-language Parent Counsellor Agent. Route 50% to NIAT Mitra AI (Test) and 50% to standard human follow-up (Control).
 
 ---
 

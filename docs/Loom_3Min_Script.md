@@ -1,8 +1,8 @@
-# 3-Minute Loom Demo Script — NIAT TrustBridge AI
+# 3-Minute Loom Demo Script — NIAT Mitra AI
 
 **[0:00 – 0:30] The Hook & The Problem**
 - "Hi NxtWave team! In my audit of NIAT, I noticed two huge bottlenecks: first, NAT-qualified leads have a strict 7-day window before lapsing into the Open Market. Second, parents hesitate on ₹8L–₹18L fees because of dual-degree confusion, and human affiliates lose their ₹30K–₹80K payout if a student gets a scholarship—so they hide it."
-- "So for Track B, I built **NIAT TrustBridge**—a 5-component, vernacular parent closer backed by **Neon Postgres**, **OpenRouter tool-calling**, and live `niatindia.com` verification."
+- "So for Track B, I built **NIAT Mitra AI**—a 5-component, vernacular parent closer backed by **Neon Postgres**, **OpenRouter tool-calling**, and live `niatindia.com` verification."
 
 **[0:30 – 1:45] Live Demo: Parent & Student Portal**
 - Open the **Parent & Student Portal** tab (show both **Light Mode** & **Dark Mode**).

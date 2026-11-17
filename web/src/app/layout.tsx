@@ -19,7 +19,7 @@ const cinzelSerif = Cinzel({
 });
 
 export const metadata: Metadata = {
-  title: "NIAT TrustBridge AI | Vernacular Parent Closer & Growth Engine",
+  title: "NIAT Mitra AI | Vernacular Parent Closer & Growth Engine",
   description:
     "AI-native bottom-of-funnel conversion engine for NxtWave NIAT: multi-tool verification, vernacular parent counselling, and 7-day open-market lead recovery.",
 };

@@ -1,4 +1,4 @@
-NIAT TrustBridge AI — Run & Deploy Commands
+NIAT Mitra AI — Run & Deploy Commands
 ===========================================
 
 1. RUN LOCALLY (Development Mode)

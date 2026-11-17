@@ -60,7 +60,7 @@ export async function runTrustBridgeAgent(params: {
     return runDeterministicPipeline(params, toolTrace);
   }
 
-  const systemPrompt = `You are NIAT TrustBridge AI, an honest, empathetic, and data-backed admission verification agent for NxtWave's NIAT program.
+  const systemPrompt = `You are NIAT Mitra AI, an honest, empathetic, and data-backed admission verification agent for NxtWave's NIAT program.
 Your job is to resolve a skeptical parent's doubts using REAL tool outputs—never make up numbers or guarantees.
 
 STRICT LEGAL GUARDRAILS (from niatindia.com/llm-info):
@@ -100,7 +100,7 @@ Parent's Primary Objection: "${params.primary_objection}"`;
           Authorization: `Bearer ${apiKey}`,
           "Content-Type": "application/json",
           "HTTP-Referer": "https://niat-trustbridge.vercel.app",
-          "X-Title": "NIAT TrustBridge AI",
+          "X-Title": "NIAT Mitra AI",
         },
         body: JSON.stringify({
           model: activeModel,
@@ -120,7 +120,7 @@ Parent's Primary Objection: "${params.primary_objection}"`;
             Authorization: `Bearer ${apiKey}`,
             "Content-Type": "application/json",
             "HTTP-Referer": "https://niat-trustbridge.vercel.app",
-            "X-Title": "NIAT TrustBridge AI",
+            "X-Title": "NIAT Mitra AI",
           },
           body: JSON.stringify({
             model: activeModel,
@@ -239,7 +239,7 @@ export async function runVernacularParentChat(params: {
     const payloadMessages = [
       {
         role: "system",
-        content: `You are NIAT TrustBridge AI speaking respectfully to ${params.leadContext.parent_name} (parent of ${params.leadContext.student_name}, NAT score ${params.leadContext.nat_score}/100).
+        content: `You are NIAT Mitra AI speaking respectfully to ${params.leadContext.parent_name} (parent of ${params.leadContext.student_name}, NAT score ${params.leadContext.nat_score}/100).
 CRITICAL LANGUAGE RULE: Write your response STRICTLY in ${params.leadContext.preferred_language} (even if earlier messages in the conversation were in another language).
 RELEVANCE RULE: Answer ONLY what the parent is asking right now. Do NOT bring up unrelated states or schemes (like Bihar Student Credit Card) unless the parent specifically asks about them.
 Facts:
@@ -260,7 +260,7 @@ Facts:
           Authorization: `Bearer ${apiKey}`,
           "Content-Type": "application/json",
           "HTTP-Referer": "https://niat-trustbridge.vercel.app",
-          "X-Title": "NIAT TrustBridge AI",
+          "X-Title": "NIAT Mitra AI",
         },
         body: JSON.stringify({
           model: candidateModel,

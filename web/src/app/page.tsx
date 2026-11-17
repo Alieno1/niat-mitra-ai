@@ -901,7 +901,7 @@ export default function HomePage() {
                   lightMode ? "text-[#5C171B]" : "text-white"
                 }`}
               >
-                NIAT TrustBridge
+                NIAT Mitra AI
               </div>
               <div className={`mt-0.5 text-xs font-medium ${lightMode ? "text-[#6B5438]" : "text-slate-400"}`}>
                 NxtWave Growth Engine

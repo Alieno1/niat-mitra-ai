@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
               Authorization: `Bearer ${apiKey}`,
               "Content-Type": "application/json",
               "HTTP-Referer": "https://niat-trustbridge.vercel.app",
-              "X-Title": "NIAT TrustBridge AI Assistant",
+              "X-Title": "NIAT Mitra AI Assistant",
             },
             body: JSON.stringify({
               model: candidateModel,
