@@ -1,0 +1,1725 @@
+"use client";
+
+/**
+ * @file src/app/page.tsx
+ * @description Main dual-mode UI for NIAT TrustBridge AI:
+ * - Tab 1: Parent & Student Vernacular Trust Portal (Intake -> Multi-Tool AI Agent -> Native Dossier & Chat -> Campus Visit Booking)
+ * - Tab 2: Growth Manager Command Center (Live Neon Postgres CRM, CAT-A/CAT-B CAC Savings, 7-Day Window Tracker, WhatsApp & Tool Logs)
+ */
+
+import React, { useCallback, useEffect, useState } from "react";
+import {
+  Activity,
+  AlertTriangle,
+  BarChart3,
+  Bot,
+  CalendarCheck,
+  Check,
+  CheckCircle2,
+  Copy,
+  Cpu,
+  Database,
+  ExternalLink,
+  Globe,
+  KeyRound,
+  MessageSquare,
+  Mic,
+  MicOff,
+  Moon,
+  Send,
+  ShieldCheck,
+  Sparkles,
+  Square,
+  Sun,
+  TrendingUp,
+  Volume2,
+  X,
+} from "lucide-react";
+
+interface Campus {
+  id: number;
+  name: string;
+  city: string;
+  state: string;
+  category: "CAT-A" | "CAT-B";
+  affiliate_payout_inr: number;
+  estimated_4yr_fee_lakhs: number;
+  ugc_status: string;
+  local_tier3_avg_lpa: number;
+  slug: string;
+}
+
+interface Lead {
+  id: number;
+  student_name: string;
+  parent_name: string;
+  phone: string;
+  state: string;
+  city: string;
+  exam_type: string;
+  exam_rank: number;
+  nat_score: number;
+  budget_lakhs: number;
+  preferred_language: string;
+  primary_objection: string;
+  matched_campus_id: number;
+  campus_name?: string;
+  campus_city?: string;
+  campus_category?: string;
+  campus_ugc?: string;
+  trust_score: number;
+  funnel_stage: string;
+  open_market_expires_at: string;
+  cac_saved_inr: number;
+  created_at: string;
+}
+
+interface ToolTraceItem {
+  tool_name: string;
+  tool_input: Record<string, unknown>;
+  tool_output: Record<string, unknown>;
+  latency_ms: number;
+}
+
+interface DispatchItem {
+  id: number;
+  lead_id: number;
+  student_name?: string;
+  parent_name?: string;
+  language: string;
+  message_type: string;
+  message_body: string;
+  scheduled_visit_slot: string | null;
+  status: string;
+  created_at: string;
+}
+
+interface DashboardData {
+  kpis: {
+    total_leads: number;
+    total_cac_saved_inr: number;
+    avg_trust_score: number;
+    cat_b_rescued: number;
+    has_openrouter_key: boolean;
+  };
+  leads: Lead[];
+  campuses: Campus[];
+  toolLogs: Array<ToolTraceItem & { id: number; lead_id: number; created_at: string }>;
+  dispatches: DispatchItem[];
+}
+
+const LANGUAGES = [
+  "Telugu",
+  "Hindi",
+  "Tamil",
+  "Kannada",
+  "Malayalam",
+  "Marathi",
+  "Gujarati",
+  "Punjabi",
+  "Bengali",
+  "Odia",
+  "English",
+];
+
+/** Maps UI language names to BCP-47 Indian regional voice/speech locales */
+const SPEECH_LOCALE_MAP: Record<string, string> = {
+  Telugu: "te-IN",
+  Hindi: "hi-IN",
+  Tamil: "ta-IN",
+  Kannada: "kn-IN",
+  Malayalam: "ml-IN",
+  Marathi: "mr-IN",
+  Gujarati: "gu-IN",
+  Punjabi: "pa-IN",
+  Bengali: "bn-IN",
+  Odia: "or-IN",
+  English: "en-IN",
+};
+
+const PRESET_SCENARIOS = [
+  {
+    label: "Telangana Parent (Telugu) — Is the B.Tech Degree Valid?",
+    student_name: "Sai Charan",
+    parent_name: "Venkateshwarlu",
+    phone: "+91-9849012345",
+    state: "Telangana",
+    city: "Karimnagar",
+    exam_type: "TS EAPCET",
+    exam_rank: 39200,
+    nat_score: 86,
+    budget_lakhs: 13.0,
+    preferred_language: "Telugu",
+    primary_objection: "NIAT is not a university. Will my son get a valid UGC B.Tech degree for government exams or MS abroad?",
+  },
+  {
+    label: "Delhi NCR Parent (Hindi) — Are Fees Worth It vs. Online Reviews?",
+    student_name: "Rohan Verma",
+    parent_name: "Sanjay Verma",
+    phone: "+91-9810234567",
+    state: "Delhi NCR",
+    city: "Noida",
+    exam_type: "JEE Main",
+    exam_rank: 162000,
+    nat_score: 81,
+    budget_lakhs: 14.0,
+    preferred_language: "Hindi",
+    primary_objection: "Some online reviews say NIAT fees are high and jobs are not guaranteed. Why not join a normal local college?",
+  },
+  {
+    label: "Tamil Nadu Parent (Tamil) — Can We Get a Scholarship?",
+    student_name: "Kavya Subramanian",
+    parent_name: "Subramanian R",
+    phone: "+91-9840155667",
+    state: "Tamil Nadu",
+    city: "Madurai",
+    exam_type: "12th Boards",
+    exam_rank: 0,
+    nat_score: 91,
+    budget_lakhs: 12.5,
+    preferred_language: "Tamil",
+    primary_objection: "An admission agent told us there is no scholarship. Is there a real NAT merit waiver?",
+  },
+  {
+    label: "Maharashtra Parent (Marathi) — Hostel Safety & Campus Life?",
+    student_name: "Atharva Kulkarni",
+    parent_name: "Prakash Kulkarni",
+    phone: "+91-9822011223",
+    state: "Maharashtra",
+    city: "Pune",
+    exam_type: "MHT-CET",
+    exam_rank: 29500,
+    nat_score: 83,
+    budget_lakhs: 14.5,
+    preferred_language: "Marathi",
+    primary_objection: "How are the hostels, food, and campus facilities at Pune partner universities compared to regular colleges?",
+  },
+  {
+    label: "Gujarat Student (Gujarati) — Low JEE Rank: Local College vs. NIAT?",
+    student_name: "Dev Patel",
+    parent_name: "Mahesh Patel",
+    phone: "+91-9825044556",
+    state: "Rajasthan",
+    city: "Ahmedabad",
+    exam_type: "JEE Main",
+    exam_rank: 185000,
+    nat_score: 85,
+    budget_lakhs: 12.5,
+    preferred_language: "Gujarati",
+    primary_objection: "With a 1.85L JEE rank, I only get a local Tier-3 college. Is NIAT worth the extra investment for 4 years?",
+  },
+  {
+    label: "Karnataka Parent (Kannada) — Are Placements Guaranteed?",
+    student_name: "Ananya Gowda",
+    parent_name: "Ramesh Gowda",
+    phone: "+91-9845077889",
+    state: "Karnataka",
+    city: "Bengaluru",
+    exam_type: "KCET",
+    exam_rank: 34000,
+    nat_score: 89,
+    budget_lakhs: 14.5,
+    preferred_language: "Kannada",
+    primary_objection: "Does NIAT guarantee an ₹80 LPA job or internship, or how do placements actually work?",
+  },
+  {
+    label: "Bihar Parent (Hindi) — Education Loan & Nearest Campus?",
+    student_name: "Aman Kumar",
+    parent_name: "Binod Kumar",
+    phone: "+91-9431011223",
+    state: "Bihar",
+    city: "Patna",
+    exam_type: "JEE Main",
+    exam_rank: 140000,
+    nat_score: 82,
+    budget_lakhs: 11.5,
+    preferred_language: "Hindi",
+    primary_objection: "We are from Bihar. Which nearest partner campus fits an ₹11.5L budget and can we get a bank education loan?",
+  },
+  {
+    label: "Andhra Pradesh Parent (Telugu) — First-Year Internships Real?",
+    student_name: "Lakshmi Narayana",
+    parent_name: "Srinivas Rao",
+    phone: "+91-9848522334",
+    state: "Andhra Pradesh",
+    city: "Vijayawada",
+    exam_type: "AP EAPCET",
+    exam_rank: 46000,
+    nat_score: 88,
+    budget_lakhs: 11.0,
+    preferred_language: "Telugu",
+    primary_objection: "Do students really get internships in Year 1–2, or is it just marketing? Also explain the IIT Kharagpur course.",
+  },
+  {
+    label: "West Bengal Parent (Bengali) — No Prior Coding Experience?",
+    student_name: "Riddhi Chatterjee",
+    parent_name: "Subrata Chatterjee",
+    phone: "+91-9830066778",
+    state: "West Bengal",
+    city: "Kolkata",
+    exam_type: "WBJEE",
+    exam_rank: 31000,
+    nat_score: 80,
+    budget_lakhs: 12.0,
+    preferred_language: "Bengali",
+    primary_objection: "My daughter has never done coding in 11th–12th. Will she be able to cope with AI & ML from Day 1?",
+  },
+  {
+    label: "Kerala Parent (Malayalam) — Campus Visit & Refund Policy?",
+    student_name: "Nikhil Menon",
+    parent_name: "Rajeev Menon",
+    phone: "+91-9847033445",
+    state: "Kerala",
+    city: "Kochi",
+    exam_type: "12th Boards (%)",
+    exam_rank: 88,
+    nat_score: 84,
+    budget_lakhs: 13.5,
+    preferred_language: "Malayalam",
+    primary_objection: "Can we visit the Bengaluru/Coimbatore partner campus with our family before paying the Seat Reservation fee?",
+  },
+  {
+    label: "Punjab Parent (Punjabi) — Drop-Year (2024/2025 Pass-Out) Eligible?",
+    student_name: "Harpreet Singh",
+    parent_name: "Gurpreet Singh",
+    phone: "+91-9814055667",
+    state: "Punjab",
+    city: "Ludhiana",
+    exam_type: "JEE Main",
+    exam_rank: 155000,
+    nat_score: 79,
+    budget_lakhs: 12.0,
+    preferred_language: "Punjabi",
+    primary_objection: "My son passed 12th last year (drop year for JEE). Is he eligible for NAT and Haryana/NCR partner campuses?",
+  },
+  {
+    label: "Uttar Pradesh Parent (Hindi) — Regular B.Tech Exams vs. NIAT?",
+    student_name: "Aditya Mishra",
+    parent_name: "Rakesh Mishra",
+    phone: "+91-9415088990",
+    state: "Uttar Pradesh",
+    city: "Lucknow",
+    exam_type: "CUET",
+    exam_rank: 0,
+    nat_score: 78,
+    budget_lakhs: 11.0,
+    preferred_language: "Hindi",
+    primary_objection: "How does a student manage both university semester exams and NIAT coding classes without getting overloaded?",
+  },
+];
+
+export default function HomePage() {
+  const [activeTab, setActiveTab] = useState<"portal" | "dashboard">("portal");
+  const [lightMode, setLightMode] = useState(false);
+  const [dashboard, setDashboard] = useState<DashboardData | null>(null);
+  const [openRouterKeyInput, setOpenRouterKeyInput] = useState("");
+  const [showKeyBox, setShowKeyBox] = useState(false);
+
+  // Student/Parent Intake Form State
+  const [form, setForm] = useState<{
+    label: string;
+    student_name: string;
+    parent_name: string;
+    phone: string;
+    state: string;
+    city: string;
+    exam_type: string;
+    exam_rank: number | "";
+    nat_score: number | "";
+    budget_lakhs: number | "";
+    preferred_language: string;
+    primary_objection: string;
+  }>(PRESET_SCENARIOS[0]);
+  const [countryCode, setCountryCode] = useState("+91");
+  const [phoneNumberOnly, setPhoneNumberOnly] = useState("9849012345");
+  const [analyzing, setAnalyzing] = useState(false);
+
+  // Active AI Analysis Result State
+  const [activeLead, setActiveLead] = useState<Lead | null>(null);
+  const [matchedCampus, setMatchedCampus] = useState<Campus | null>(null);
+  const [agentResult, setAgentResult] = useState<{
+    mode: string;
+    model_used: string;
+    trust_score: number;
+    cac_saved_inr: number;
+    parent_brief_native: string;
+    whatsapp_message_native: string;
+    closer_script_english: string;
+    tool_trace: ToolTraceItem[];
+  } | null>(null);
+
+  // Vernacular Chat & Voice (TTS / STT) + WhatsApp State
+  const [chatHistory, setChatHistory] = useState<Array<{ role: string; content: string }>>([]);
+  const [chatInput, setChatInput] = useState("");
+  const [chatLoading, setChatLoading] = useState(false);
+  const [speakingId, setSpeakingId] = useState<string | null>(null);
+  const [listeningTarget, setListeningTarget] = useState<"objection" | "general" | "followup" | null>(null);
+  const recognitionRef = React.useRef<{ stop: () => void } | null>(null);
+  const [waMeUrl, setWaMeUrl] = useState<string | null>(null);
+  const [waMode, setWaMode] = useState<string | null>(null);
+  const [visitSlot, setVisitSlot] = useState("This Saturday, 11:00 AM IST");
+  const [visitBooked, setVisitBooked] = useState(false);
+  const [copiedWa, setCopiedWa] = useState(false);
+
+  // Always-On Dynamic "Ask NIAT AI Anything" Jarvis Assistant Modal State
+  const [assistantOpen, setAssistantOpen] = useState(false);
+  const [generalChat, setGeneralChat] = useState<Array<{ role: string; content: string }>>([
+    {
+      role: "assistant",
+      content:
+        "Hi! I am your NIAT AI Guide. Ask me anything in plain words—about any of our 35+ partner colleges, total fees, NAT exam, UGC degree validity, or how NIAT compares to Scaler & Newton!",
+    },
+  ]);
+  const [generalInput, setGeneralInput] = useState("");
+  const [generalLoading, setGeneralLoading] = useState(false);
+
+  /** Sends any arbitrary question to the Neon-grounded Dynamic AI Assistant */
+  async function handleGeneralAsk(questionText?: string) {
+    const q = (questionText ?? generalInput).trim();
+    if (!q || generalLoading) return;
+    if (!questionText) setGeneralInput("");
+    setGeneralChat((prev) => [...prev, { role: "user", content: q }]);
+    setGeneralLoading(true);
+    try {
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (openRouterKeyInput.trim()) headers["x-openrouter-key"] = openRouterKeyInput.trim();
+      const res = await fetch("/api/agent/general-chat", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          question: q,
+          language: form.preferred_language,
+          history: generalChat,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setGeneralChat((prev) => [...prev, { role: "assistant", content: data.reply }]);
+      }
+    } finally {
+      setGeneralLoading(false);
+    }
+  }
+
+  /** Speaks any specific brief or chat reply aloud using the most natural available voice */
+  function toggleVoiceBrief(text: string, id: string = "brief") {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+    if (speakingId === id) {
+      window.speechSynthesis.cancel();
+      setSpeakingId(null);
+      return;
+    }
+    window.speechSynthesis.cancel();
+
+    // Strip markdown formatting so TTS reads smoothly without awkward pauses
+    const cleanText = text
+      .replace(/\*\*/g, "")
+      .replace(/[*#_`]/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    const targetLang = SPEECH_LOCALE_MAP[form.preferred_language] || "en-IN";
+    const baseLang = targetLang.split("-")[0];
+    const voices = window.speechSynthesis.getVoices();
+
+    // Prefer Google / Microsoft / Natural neural voices over basic robotic OS voices
+    const preferredVoice =
+      voices.find(
+        (v) =>
+          v.lang.toLowerCase().startsWith(targetLang.toLowerCase()) &&
+          /google|natural|neural|microsoft/i.test(v.name)
+      ) ||
+      voices.find((v) => v.lang.toLowerCase().startsWith(targetLang.toLowerCase())) ||
+      voices.find(
+        (v) =>
+          v.lang.toLowerCase().startsWith(baseLang.toLowerCase()) &&
+          /google|natural|neural|microsoft/i.test(v.name)
+      ) ||
+      voices.find((v) => v.lang.toLowerCase().startsWith(baseLang.toLowerCase())) ||
+      voices.find((v) => /google/i.test(v.name));
+
+    const utterance = new SpeechSynthesisUtterance(cleanText);
+    utterance.lang = targetLang;
+    if (preferredVoice) utterance.voice = preferredVoice;
+    utterance.rate = 1.12;
+    utterance.pitch = 1.02;
+    utterance.onend = () => setSpeakingId(null);
+    utterance.onerror = () => setSpeakingId(null);
+    setSpeakingId(id);
+    window.speechSynthesis.speak(utterance);
+  }
+
+  /** Captures live multi-language voice input (Web Speech STT) with real-time interim transcription */
+  function toggleVoiceInput(target: "objection" | "general" | "followup") {
+    if (typeof window === "undefined") return;
+
+    // Stop if already listening
+    if (listeningTarget) {
+      recognitionRef.current?.stop();
+      setListeningTarget(null);
+      return;
+    }
+
+    const SpeechRec =
+      (window as unknown as { SpeechRecognition?: new () => unknown; webkitSpeechRecognition?: new () => unknown })
+        .SpeechRecognition ||
+      (window as unknown as { webkitSpeechRecognition?: new () => unknown }).webkitSpeechRecognition;
+    if (!SpeechRec) {
+      alert("Voice recognition requires Google Chrome or Microsoft Edge.");
+      return;
+    }
+
+    const recognition = new SpeechRec() as {
+      lang: string;
+      interimResults: boolean;
+      continuous: boolean;
+      onresult: (ev: { results: ArrayLike<{ isFinal?: boolean; 0: { transcript: string } }> }) => void;
+      onerror: () => void;
+      onend: () => void;
+      start: () => void;
+      stop: () => void;
+    };
+
+    // Use en-IN as universal Indian speech recognition (handles English, Hinglish & Indian accents)
+    recognition.lang = "en-IN";
+    recognition.interimResults = true;
+    recognition.continuous = false;
+
+    const baseObjection = form.primary_objection;
+    const baseGeneral = generalInput;
+    const baseFollowup = chatInput;
+
+    recognition.onresult = (event) => {
+      let combined = "";
+      for (let i = 0; i < event.results.length; i++) {
+        combined += event.results[i]?.[0]?.transcript || "";
+      }
+      const clean = combined.trim();
+      if (target === "objection") {
+        setForm((prev) => ({
+          ...prev,
+          primary_objection: baseObjection ? `${baseObjection} ${clean}` : clean,
+        }));
+      } else if (target === "general") {
+        setGeneralInput(baseGeneral ? `${baseGeneral} ${clean}` : clean);
+      } else {
+        setChatInput(baseFollowup ? `${baseFollowup} ${clean}` : clean);
+      }
+    };
+
+    recognition.onerror = () => setListeningTarget(null);
+    recognition.onend = () => setListeningTarget(null);
+    recognitionRef.current = recognition;
+    setListeningTarget(target);
+    recognition.start();
+  }
+
+  /** Fetches live Neon Postgres data for the Growth Manager dashboard */
+  const refreshDashboard = useCallback(async () => {
+    try {
+      const res = await fetch("/api/dashboard");
+      if (res.ok) {
+        const data = await res.json();
+        setDashboard(data);
+      }
+    } catch (e) {
+      console.error("Failed to fetch dashboard:", e);
+    }
+  }, []);
+
+  useEffect(() => {
+    refreshDashboard();
+  }, [refreshDashboard]);
+
+  // Lock background page scrolling and close on Escape key when the Jarvis AI Assistant popup is open
+  useEffect(() => {
+    if (typeof document !== "undefined") {
+      document.body.style.overflow = assistantOpen ? "hidden" : "";
+    }
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && assistantOpen) {
+        setAssistantOpen(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      if (typeof document !== "undefined") {
+        document.body.style.overflow = "";
+      }
+    };
+  }, [assistantOpen]);
+
+  /** Triggers the 4-component OpenRouter + Neon AI pipeline */
+  async function handleRunAnalysis(e: React.FormEvent) {
+    e.preventDefault();
+    setAnalyzing(true);
+    setVisitBooked(false);
+    const fullPhone = `${countryCode}-${phoneNumberOnly.replace(/\D/g, "")}`;
+    try {
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (openRouterKeyInput.trim()) {
+        headers["x-openrouter-key"] = openRouterKeyInput.trim();
+      }
+      const res = await fetch("/api/agent/analyze", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ ...form, phone: fullPhone }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setActiveLead(data.lead);
+        setMatchedCampus(data.matched_campus);
+        setAgentResult(data.agent);
+        setWaMeUrl(data.whatsapp?.wa_me_url || null);
+        setWaMode(data.whatsapp?.delivery_mode || null);
+        setChatHistory([{ role: "assistant", content: data.agent.parent_brief_native }]);
+        await refreshDashboard();
+      }
+    } finally {
+      setAnalyzing(false);
+    }
+  }
+
+  /** Sends a follow-up parent question to the Vernacular Counsellor API */
+  async function handleSendChat(e: React.FormEvent) {
+    e.preventDefault();
+    if (!activeLead || !chatInput.trim()) return;
+    const msg = chatInput.trim();
+    setChatInput("");
+    setChatHistory((prev) => [...prev, { role: "user", content: msg }]);
+    setChatLoading(true);
+    try {
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (openRouterKeyInput.trim()) {
+        headers["x-openrouter-key"] = openRouterKeyInput.trim();
+      }
+      const res = await fetch("/api/agent/chat", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          lead_id: activeLead.id,
+          message: msg,
+          language: form.preferred_language,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setChatHistory((prev) => [...prev, { role: "assistant", content: data.reply }]);
+        setAgentResult((prev) => (prev ? { ...prev, trust_score: data.trust_score } : prev));
+        // Refresh dashboard KPIs in background so UI responds immediately
+        void refreshDashboard();
+      }
+    } finally {
+      setChatLoading(false);
+    }
+  }
+
+  /** Books a Campus Visit or marks Seat Reserved in Neon Postgres */
+  async function handleStageUpdate(leadId: number, stage: string, slot?: string) {
+    const res = await fetch(`/api/leads/${leadId}/stage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ funnel_stage: stage, visit_slot: slot || visitSlot }),
+    });
+    if (res.ok) {
+      if (activeLead?.id === leadId) setVisitBooked(true);
+      await refreshDashboard();
+    }
+  }
+
+  return (
+    <div
+      data-theme={lightMode ? "light" : "dark"}
+      className={`min-h-screen transition-colors duration-200 ${
+        lightMode ? "light-theme bg-slate-50 text-slate-900" : "bg-slate-950 text-slate-100"
+      }`}
+    >
+      {/* Top Navigation Bar */}
+      <header
+        className={`sticky top-0 z-30 border-b backdrop-blur ${
+          lightMode
+            ? "border-slate-200 bg-white/90"
+            : "border-slate-800/80 bg-slate-950/90"
+        }`}
+      >
+        <div className="mx-auto flex max-w-[1440px] flex-wrap items-center justify-between gap-4 px-5 py-4 sm:px-8">
+          <div className="flex items-center gap-4">
+            <img
+              src="/niat-logo.png"
+              alt="NIAT Logo"
+              className="h-14 w-14 rounded-xl object-cover border border-amber-200/30 shadow-md"
+            />
+            <div>
+              <div className="flex items-center gap-2.5">
+                <h1 className={`text-xl font-bold tracking-tight sm:text-2xl ${lightMode ? "text-slate-900" : "text-white"}`}>
+                  NIAT TrustBridge AI
+                </h1>
+                <span className="rounded-full bg-indigo-500/15 px-3 py-0.5 text-xs font-medium text-indigo-400 border border-indigo-500/30">
+                  Parent &amp; Student Guide
+                </span>
+              </div>
+              <p className={`mt-0.5 text-sm ${lightMode ? "text-slate-600" : "text-slate-400"}`}>
+                Vernacular Parent Closer &amp; 7-Day Lead Recovery Engine
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Light / Dark Theme Toggle */}
+            <button
+              type="button"
+              onClick={() => setLightMode(!lightMode)}
+              className={`flex cursor-pointer items-center gap-2 rounded-xl border px-3.5 py-2 text-sm font-medium transition ${
+                lightMode
+                  ? "border-slate-300 bg-slate-100 text-slate-700 hover:bg-slate-200"
+                  : "border-slate-700 bg-slate-900 text-slate-300 hover:border-slate-500"
+              }`}
+              title="Toggle Light / Dark Mode"
+            >
+              {lightMode ? <Moon className="h-4 w-4 text-indigo-600" /> : <Sun className="h-4 w-4 text-amber-400" />}
+              {lightMode ? "Dark" : "Light"}
+            </button>
+
+            <div className={`flex rounded-xl border p-1 ${lightMode ? "border-slate-200 bg-slate-100" : "border-slate-800 bg-slate-900"}`}>
+              <button
+                onClick={() => setActiveTab("portal")}
+                className={`flex cursor-pointer items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition ${
+                  activeTab === "portal"
+                    ? "bg-indigo-600 text-white shadow"
+                    : lightMode
+                    ? "text-slate-600 hover:text-slate-900"
+                    : "text-slate-400 hover:text-white"
+                }`}
+              >
+                <Bot className="h-4 w-4" />
+                Parent & Student Portal
+              </button>
+              <button
+                onClick={() => setActiveTab("dashboard")}
+                className={`flex cursor-pointer items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition ${
+                  activeTab === "dashboard"
+                    ? "bg-indigo-600 text-white shadow"
+                    : lightMode
+                    ? "text-slate-600 hover:text-slate-900"
+                    : "text-slate-400 hover:text-white"
+                }`}
+              >
+                <BarChart3 className="h-4 w-4" />
+                Growth Command Center ({dashboard?.kpis.total_leads ?? 0})
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="mx-auto max-w-[1440px] px-5 py-6 sm:px-8">
+        {activeTab === "portal" ? (
+          <div className="space-y-6">
+            {/* Beginner-Friendly 3-Step Explainer Banner */}
+            <div className="grid grid-cols-1 gap-4 rounded-2xl border border-indigo-500/20 bg-gradient-to-r from-indigo-950/50 via-slate-900 to-slate-900 p-5 sm:grid-cols-3">
+              <div className="flex items-start gap-3">
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-sm font-bold text-white">
+                  1
+                </span>
+                <div>
+                  <div className="text-sm font-semibold text-white">What is NIAT?</div>
+                  <p className="mt-0.5 text-xs leading-relaxed text-slate-300">
+                    A <strong>UGC-approved B.Tech degree</strong> from a partner university + <strong>4 years of coding &amp; AI skills</strong> by NxtWave.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-sm font-bold text-white">
+                  2
+                </span>
+                <div>
+                  <div className="text-sm font-semibold text-white">Check Fees &amp; Scholarship</div>
+                  <p className="mt-0.5 text-xs leading-relaxed text-slate-300">
+                    Enter your state, exam, and NAT score below to get an honest 4-year cost &amp; ROI check.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-sm font-bold text-white">
+                  3
+                </span>
+                <div>
+                  <div className="text-sm font-semibold text-white">Listen &amp; Ask in Your Language</div>
+                  <p className="mt-0.5 text-xs leading-relaxed text-slate-300">
+                    Parents can play a voice note or ask any random doubt in 11 Indian languages.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+            {/* LEFT COLUMN: Intake & Presets */}
+            <section className="lg:col-span-5 space-y-4">
+              <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
+                <div className="mb-3 flex items-center justify-between">
+                  <h2 className="text-base font-semibold uppercase tracking-wider text-indigo-400">
+                    1. Quick Parent FAQs &amp; Scenarios
+                  </h2>
+                  <span className="text-xs text-slate-400">1-Click Fill ({PRESET_SCENARIOS.length})</span>
+                </div>
+                <div className="max-h-56 space-y-2 overflow-y-auto pr-1">
+                  {[...PRESET_SCENARIOS]
+                    .sort((a, b) => a.label.localeCompare(b.label))
+                    .map((preset, idx) => {
+                    const isSelected = form.label === preset.label;
+                    return (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => {
+                          setForm(preset);
+                          const parts = preset.phone.split("-");
+                          if (parts.length === 2) {
+                            setCountryCode(parts[0]);
+                            setPhoneNumberOnly(parts[1]);
+                          }
+                        }}
+                        className={`w-full cursor-pointer rounded-xl border px-3.5 py-2.5 text-left text-sm font-medium transition-all ${
+                          isSelected
+                            ? lightMode
+                              ? "border-indigo-500 bg-indigo-50 text-indigo-900 shadow-sm"
+                              : "border-indigo-500 bg-indigo-950/60 text-white shadow-sm"
+                            : lightMode
+                            ? "border-slate-200 bg-slate-50 text-slate-700 hover:border-indigo-400 hover:bg-indigo-50/70 hover:text-indigo-950"
+                            : "border-slate-800 bg-slate-950/70 text-slate-300 hover:border-indigo-400 hover:bg-indigo-950/40 hover:text-white"
+                        }`}
+                      >
+                        {preset.label}
+                      </button>
+                    );
+                  })}
+                  {/* Pinned last option: Clear all fields so user can enter a custom doubt */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setForm({
+                        label: "__CUSTOM__",
+                        student_name: "",
+                        parent_name: "",
+                        phone: "",
+                        state: "",
+                        city: "",
+                        exam_type: "",
+                        exam_rank: "",
+                        nat_score: "",
+                        budget_lakhs: "",
+                        preferred_language: "English",
+                        primary_objection: "",
+                      });
+                      setPhoneNumberOnly("");
+                    }}
+                    className={`w-full cursor-pointer rounded-xl border border-dashed px-3 py-2 text-left text-xs font-semibold transition-all ${
+                      form.label === "__CUSTOM__"
+                        ? lightMode
+                          ? "border-indigo-500 bg-indigo-50 text-indigo-900"
+                          : "border-indigo-500 bg-indigo-950/60 text-white"
+                        : lightMode
+                        ? "border-slate-300 bg-white text-indigo-700 hover:border-indigo-400 hover:bg-indigo-50"
+                        : "border-slate-700 bg-slate-950/50 text-indigo-300 hover:border-indigo-400 hover:bg-indigo-950/40 hover:text-white"
+                    }`}
+                  >
+                    ✨ Ask Your Own Question
+                  </button>
+                </div>
+              </div>
+
+              <form
+                onSubmit={handleRunAnalysis}
+                className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 space-y-4"
+              >
+                <h2 className="text-base font-semibold uppercase tracking-wider text-indigo-400">
+                  2. Student & Parent Lead Profile
+                </h2>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="mb-1 block text-xs text-slate-400">Student Name</label>
+                    <input
+                      required
+                      value={form.student_name}
+                      onChange={(e) => setForm({ ...form, student_name: e.target.value })}
+                      className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white focus:border-indigo-500 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs text-slate-400">Parent Name</label>
+                    <input
+                      required
+                      value={form.parent_name}
+                      onChange={(e) => setForm({ ...form, parent_name: e.target.value })}
+                      className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white focus:border-indigo-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-xs text-slate-400">
+                    Parent WhatsApp Number <span className="text-[10px] text-indigo-400">(Enter real number to test WhatsApp)</span>
+                  </label>
+                  <div className="flex gap-2">
+                    <select
+                      value={countryCode}
+                      onChange={(e) => setCountryCode(e.target.value)}
+                      className="w-24 rounded-lg border border-slate-700 bg-slate-950 px-2 py-2 text-sm text-white focus:border-indigo-500 focus:outline-none"
+                    >
+                      <option value="+91">+91 (IN)</option>
+                      <option value="+971">+971 (AE)</option>
+                      <option value="+1">+1 (US)</option>
+                      <option value="+44">+44 (UK)</option>
+                      <option value="+65">+65 (SG)</option>
+                    </select>
+                    <input
+                      required
+                      type="tel"
+                      value={phoneNumberOnly}
+                      onChange={(e) => setPhoneNumberOnly(e.target.value.replace(/[^\d]/g, ""))}
+                      placeholder="9876543210"
+                      className="flex-1 rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white focus:border-indigo-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="mb-1 block text-xs text-slate-400">State / Region</label>
+                    <select
+                      required
+                      value={form.state}
+                      onChange={(e) => setForm({ ...form, state: e.target.value })}
+                      className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white focus:border-indigo-500 focus:outline-none"
+                    >
+                      <option value="">Select State / UT...</option>
+                      {[
+                        "Andhra Pradesh",
+                        "Arunachal Pradesh",
+                        "Assam",
+                        "Bihar",
+                        "Chhattisgarh",
+                        "Delhi NCR",
+                        "Goa",
+                        "Gujarat",
+                        "Haryana",
+                        "Himachal Pradesh",
+                        "Jharkhand",
+                        "Karnataka",
+                        "Kerala",
+                        "Madhya Pradesh",
+                        "Maharashtra",
+                        "Manipur",
+                        "Meghalaya",
+                        "Mizoram",
+                        "Nagaland",
+                        "Odisha",
+                        "Punjab",
+                        "Rajasthan",
+                        "Sikkim",
+                        "Tamil Nadu",
+                        "Telangana",
+                        "Tripura",
+                        "Uttar Pradesh",
+                        "Uttarakhand",
+                        "West Bengal",
+                        "Andaman and Nicobar Islands (UT)",
+                        "Chandigarh (UT)",
+                        "Dadra and Nagar Haveli and Daman and Diu (UT)",
+                        "Jammu and Kashmir (UT)",
+                        "Ladakh (UT)",
+                        "Lakshadweep (UT)",
+                        "Puducherry (UT)",
+                      ].map((st) => (
+                        <option key={st} value={st}>
+                          {st}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs text-slate-400">Parent Language</label>
+                    <select
+                      value={form.preferred_language}
+                      onChange={(e) => setForm({ ...form, preferred_language: e.target.value })}
+                      className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white focus:border-indigo-500 focus:outline-none"
+                    >
+                      {LANGUAGES.map((lang) => (
+                        <option key={lang} value={lang}>
+                          {lang}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="mb-1 block text-xs text-slate-400">Entrance Exam</label>
+                    <select
+                      required
+                      value={form.exam_type}
+                      onChange={(e) => setForm({ ...form, exam_type: e.target.value })}
+                      className="w-full rounded-lg border border-slate-700 bg-slate-950 px-2.5 py-2 text-sm text-white focus:border-indigo-500 focus:outline-none"
+                    >
+                      <option value="">Select Exam...</option>
+                      {[
+                        "JEE Main",
+                        "JEE Advanced",
+                        "TS EAPCET",
+                        "AP EAPCET",
+                        "KCET",
+                        "MHT-CET",
+                        "WBJEE",
+                        "COMEDK",
+                        "CUET",
+                        "VITEEE",
+                        "SRMJEEE",
+                        "BITSAT",
+                        "12th Boards (%)",
+                        "Other State CET",
+                      ].map((ex) => (
+                        <option key={ex} value={ex}>
+                          {ex}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs text-slate-400">
+                      Exam Rank / % <span className="text-[10px] text-slate-500">(0 if N/A)</span>
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={form.exam_rank}
+                      onChange={(e) =>
+                        setForm({ ...form, exam_rank: e.target.value === "" ? "" : Number(e.target.value) })
+                      }
+                      placeholder="e.g. 42000 or 85"
+                      className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white focus:border-indigo-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="mb-1 block text-xs text-slate-400">NAT Test Score (/100)</label>
+                    <input
+                      required
+                      type="number"
+                      min={1}
+                      max={100}
+                      value={form.nat_score}
+                      onChange={(e) =>
+                        setForm({ ...form, nat_score: e.target.value === "" ? "" : Number(e.target.value) })
+                      }
+                      placeholder="e.g. 82"
+                      className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white focus:border-indigo-500 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs text-slate-400">Budget (₹ Lakhs)</label>
+                    <input
+                      required
+                      type="number"
+                      step="0.5"
+                      min={8}
+                      max={22}
+                      value={form.budget_lakhs}
+                      onChange={(e) =>
+                        setForm({ ...form, budget_lakhs: e.target.value === "" ? "" : Number(e.target.value) })
+                      }
+                      placeholder="e.g. 12.5"
+                      className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white focus:border-indigo-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <div className="mb-1 flex items-center justify-between gap-2">
+                    <label className="block text-xs text-slate-400">
+                      Parent&apos;s Primary Objection / Doubt
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => toggleVoiceInput("objection")}
+                      className={`flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-medium transition ${
+                        listeningTarget === "objection"
+                          ? "border-rose-500 bg-rose-500/20 text-rose-300 animate-pulse"
+                          : "border-slate-700 bg-slate-950 text-indigo-300 hover:border-indigo-500"
+                      }`}
+                    >
+                      {listeningTarget === "objection" ? (
+                        <>
+                          <MicOff className="h-3 w-3" /> Listening...
+                        </>
+                      ) : (
+                        <>
+                          <Mic className="h-3 w-3" /> Speak Doubt
+                        </>
+                      )}
+                    </button>
+                  </div>
+                  <textarea
+                    rows={3}
+                    value={form.primary_objection}
+                    onChange={(e) => setForm({ ...form, primary_objection: e.target.value })}
+                    placeholder="Optional: Type or click Speak Doubt (any language)..."
+                    suppressHydrationWarning
+                    className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white focus:border-indigo-500 focus:outline-none"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={analyzing}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-600/20 transition hover:bg-indigo-500 disabled:opacity-60"
+                >
+                  <Sparkles className="h-4 w-4" />
+                  {analyzing ? "Running 4-Tool AI Verification..." : "Verify & Generate Parent Trust Dossier"}
+                </button>
+              </form>
+            </section>
+
+            {/* RIGHT COLUMN: Dedicated to Tool Trace + Parent Trust Dossier */}
+            <section className="lg:col-span-7 space-y-5">
+              {!agentResult ? (
+                <div className="flex h-full min-h-[560px] flex-col items-center justify-center rounded-2xl border border-dashed border-slate-800 bg-slate-900/30 p-10 text-center">
+                  <Cpu className="mb-4 h-14 w-14 text-indigo-400/80" />
+                  <h3 className="text-xl font-bold text-white">
+                    Personalized Campus Match &amp; Parent Trust Dossier
+                  </h3>
+                  <p className="mt-3 max-w-lg text-base leading-relaxed text-slate-400">
+                    Click <strong>&ldquo;Verify &amp; Generate Parent Trust Dossier&rdquo;</strong> on the left
+                    to run our 4 connected AI tools (Campus Match &rarr; Scholarship &amp; ROI &rarr; Student Proof &rarr; Live <code>niatindia.com</code> Check).
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setAssistantOpen(true)}
+                    className="mt-6 flex cursor-pointer items-center gap-2 rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-5 py-3 text-sm font-semibold text-emerald-300 hover:bg-emerald-500/20"
+                  >
+                    <Bot className="h-5 w-5" />
+                    Or Ask NIAT AI Any Random Question
+                  </button>
+                </div>
+              ) : (
+                <>
+                  {/* Verified Campus & Parent Trust Dossier (Backend tool trace stays in Growth Command Center) */}
+                  <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 space-y-4">
+                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-3">
+                      <div>
+                        <span className="text-[11px] font-semibold uppercase tracking-wider text-indigo-400">
+                          {matchedCampus?.category === "CAT-B"
+                            ? "Expansion Partner Campus (Scholarship Priority)"
+                            : "Established Partner University"}
+                        </span>
+                        <h3 className="text-lg font-bold text-white">
+                          {matchedCampus?.name} — {matchedCampus?.city}
+                        </h3>
+                        <p className="text-xs text-slate-400">{matchedCampus?.ugc_status}</p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-center">
+                          <div className="text-[10px] uppercase text-emerald-300">Parent Trust</div>
+                          <div className="text-lg font-bold text-emerald-400">
+                            {agentResult.trust_score}/100
+                          </div>
+                        </div>
+                        <div className="rounded-xl border border-indigo-500/30 bg-indigo-500/10 px-3 py-2 text-center">
+                          <div className="text-[10px] uppercase text-indigo-300">Est. 4-Yr Fee</div>
+                          <div className="text-lg font-bold text-indigo-300">
+                            ₹{matchedCampus?.estimated_4yr_fee_lakhs}L
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Native Language Parent Brief + Voice-Note TTS */}
+                    <div className="rounded-xl border border-indigo-500/30 bg-indigo-950/20 p-4">
+                      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 text-xs font-semibold text-indigo-300">
+                          <Globe className="h-3.5 w-3.5" />
+                          Vernacular Parent Trust Brief ({form.preferred_language})
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => toggleVoiceBrief(agentResult.parent_brief_native, "brief")}
+                          className="flex items-center gap-1.5 rounded-lg border border-indigo-500/40 bg-indigo-600/20 px-2.5 py-1 text-[11px] font-semibold text-indigo-200 hover:bg-indigo-600/35"
+                        >
+                          {speakingId === "brief" ? (
+                            <>
+                              <Square className="h-3 w-3 text-rose-400" /> Stop Voice Note
+                            </>
+                          ) : (
+                            <>
+                              <Volume2 className="h-3.5 w-3.5 text-emerald-400" /> Play Voice Note ({form.preferred_language})
+                            </>
+                          )}
+                        </button>
+                      </div>
+                      <p className="whitespace-pre-line text-sm leading-relaxed text-slate-200">
+                        {agentResult.parent_brief_native}
+                      </p>
+                    </div>
+
+                    {/* Multi-Turn Vernacular Parent Chat */}
+                    <div className="rounded-xl border border-slate-800 bg-slate-950/80 p-4 space-y-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="flex items-center gap-1.5 text-xs font-semibold text-slate-200">
+                          <MessageSquare className="h-3.5 w-3.5 text-indigo-400" />
+                          Ask Follow-Up Doubts
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[11px] text-slate-400">Reply in:</span>
+                          <select
+                            value={form.preferred_language}
+                            onChange={(e) => setForm({ ...form, preferred_language: e.target.value })}
+                            className="rounded-lg border border-slate-700 bg-slate-900 px-2 py-0.5 text-xs text-indigo-300 focus:border-indigo-500 focus:outline-none"
+                          >
+                            {LANGUAGES.map((lang) => (
+                              <option key={lang} value={lang}>
+                                {lang}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="max-h-56 space-y-2.5 overflow-y-auto pr-1">
+                        {chatHistory.slice(1).map((m, idx) => {
+                          const msgVoiceId = `followup-${idx}`;
+                          return (
+                            <div
+                              key={idx}
+                              className={`rounded-lg px-3.5 py-2.5 text-xs leading-relaxed ${
+                                m.role === "user"
+                                  ? "ml-8 bg-indigo-600/25 text-indigo-100 border border-indigo-500/30"
+                                  : "mr-6 bg-slate-900 text-slate-200 border border-slate-800"
+                              }`}
+                            >
+                              <div className="flex items-start justify-between gap-2">
+                                <div>
+                                  <span className="mr-1.5 font-semibold">
+                                    {m.role === "user" ? `${form.parent_name}:` : "TrustBridge AI:"}
+                                  </span>
+                                  {m.content}
+                                </div>
+                                {m.role === "assistant" && (
+                                  <button
+                                    type="button"
+                                    onClick={() => toggleVoiceBrief(m.content, msgVoiceId)}
+                                    title="Play voice note for this reply"
+                                    className="shrink-0 flex items-center gap-1 rounded-md border border-indigo-500/40 bg-indigo-500/15 px-2 py-1 text-[10px] font-semibold text-indigo-200 hover:bg-indigo-500/30"
+                                  >
+                                    {speakingId === msgVoiceId ? (
+                                      <>
+                                        <Square className="h-2.5 w-2.5 text-rose-400" /> Stop
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Volume2 className="h-3 w-3 text-emerald-400" /> Voice
+                                      </>
+                                    )}
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      <form onSubmit={handleSendChat} className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => toggleVoiceInput("followup")}
+                          title={`Speak in ${form.preferred_language}`}
+                          className={`flex items-center justify-center rounded-lg border px-2.5 py-2 text-xs transition ${
+                            listeningTarget === "followup"
+                              ? "border-rose-500 bg-rose-500/20 text-rose-300 animate-pulse"
+                              : "border-slate-700 bg-slate-900 text-slate-300 hover:border-indigo-500"
+                          }`}
+                        >
+                          {listeningTarget === "followup" ? <MicOff className="h-3.5 w-3.5" /> : <Mic className="h-3.5 w-3.5" />}
+                        </button>
+                        <input
+                          value={chatInput}
+                          onChange={(e) => setChatInput(e.target.value)}
+                          placeholder={`Ask or speak any parent doubt in ${form.preferred_language}...`}
+                          className="flex-1 rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-xs text-white focus:border-indigo-500 focus:outline-none"
+                        />
+                        <button
+                          type="submit"
+                          disabled={chatLoading}
+                          className="flex items-center gap-1 rounded-lg bg-indigo-600 px-3 py-2 text-xs font-semibold text-white hover:bg-indigo-500 disabled:opacity-50"
+                        >
+                          <Send className="h-3.5 w-3.5" />
+                          {chatLoading ? "..." : "Ask"}
+                        </button>
+                      </form>
+                    </div>
+
+                    {/* Campus Visit Booking + Automated WhatsApp Dispatch */}
+                    <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-800 bg-slate-950 p-4">
+                      <div>
+                        <div className="flex items-center gap-2 text-xs font-semibold text-white">
+                          <span>Lock 7-Day Window: Book Campus Visit / 1:1 Interview</span>
+                          {waMode && (
+                            <span className="rounded bg-emerald-500/15 px-1.5 py-0.5 text-[10px] text-emerald-400">
+                              {waMode === "meta-cloud-live" ? "Sent via Meta API" : "WhatsApp Ready"}
+                            </span>
+                          )}
+                        </div>
+                        <div className="mt-0.5 text-[11px] text-slate-400">
+                          WhatsApp dispatch logged for {countryCode}-{phoneNumberOnly || "9876543210"}
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        {waMeUrl && (
+                          <a
+                            href={waMeUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            onClick={() => {
+                              navigator.clipboard.writeText(agentResult.whatsapp_message_native);
+                              setCopiedWa(true);
+                              setTimeout(() => setCopiedWa(false), 3000);
+                            }}
+                            className="flex items-center gap-1 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-2.5 py-1.5 text-xs font-semibold text-emerald-300 hover:bg-emerald-500/20"
+                          >
+                            <ExternalLink className="h-3.5 w-3.5" />
+                            Send on WhatsApp
+                          </a>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigator.clipboard.writeText(agentResult.whatsapp_message_native);
+                            setCopiedWa(true);
+                            setTimeout(() => setCopiedWa(false), 2000);
+                          }}
+                          className="flex items-center gap-1 rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-1.5 text-xs font-medium text-slate-300 hover:border-slate-500"
+                        >
+                          {copiedWa ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
+                          {copiedWa ? "Copied!" : "Copy Msg"}
+                        </button>
+                        <select
+                          value={visitSlot}
+                          onChange={(e) => setVisitSlot(e.target.value)}
+                          className="rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-1.5 text-xs text-white"
+                        >
+                          <option>This Saturday, 11:00 AM IST</option>
+                          <option>This Sunday, 4:00 PM IST</option>
+                          <option>Tomorrow, 5:30 PM (1:1 Video)</option>
+                        </select>
+                        <button
+                          type="button"
+                          onClick={() => activeLead && handleStageUpdate(activeLead.id, "CAMPUS_VISIT_BOOKED", visitSlot)}
+                          className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-white ${
+                            visitBooked
+                              ? "bg-emerald-600"
+                              : "bg-emerald-600 hover:bg-emerald-500"
+                          }`}
+                        >
+                          <CalendarCheck className="h-3.5 w-3.5" />
+                          {visitBooked ? "Visit Booked!" : "Book Visit"}
+                        </button>
+                      </div>
+                      {visitBooked && (
+                        <div className="w-full rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-300">
+                          ✅ <strong>Campus Visit Confirmed</strong> for <strong>{visitSlot}</strong> — saved to Neon Postgres, Parent Trust Score boosted, and visible in the <strong>Growth Command Center</strong> tab!
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
+            </section>
+          </div>
+          </div>
+        ) : (
+          /* TAB 2: GROWTH MANAGER COMMAND CENTER */
+          <div className="space-y-6">
+            {/* KPI Row */}
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4">
+                <div className="flex items-center justify-between text-xs text-slate-400">
+                  <span>Active Leads in Pipeline</span>
+                  <Database className="h-4 w-4 text-indigo-400" />
+                </div>
+                <div className="mt-2 text-2xl font-bold text-white">
+                  {dashboard?.kpis.total_leads ?? 0}
+                </div>
+                <div className="mt-1 text-[11px] text-slate-400">Synced live with Neon Postgres</div>
+              </div>
+
+              <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4">
+                <div className="flex items-center justify-between text-xs text-slate-400">
+                  <span>Affiliate CAC Saved</span>
+                  <TrendingUp className="h-4 w-4 text-emerald-400" />
+                </div>
+                <div className="mt-2 text-2xl font-bold text-emerald-400">
+                  ₹{((dashboard?.kpis.total_cac_saved_inr ?? 0) / 100000).toFixed(2)} Lakhs
+                </div>
+                <div className="mt-1 text-[11px] text-slate-400">₹35K (CAT-A) / ₹55K–60K (CAT-B)</div>
+              </div>
+
+              <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4">
+                <div className="flex items-center justify-between text-xs text-slate-400">
+                  <span>Avg Parent Trust Score</span>
+                  <ShieldCheck className="h-4 w-4 text-indigo-400" />
+                </div>
+                <div className="mt-2 text-2xl font-bold text-white">
+                  {dashboard?.kpis.avg_trust_score ?? 0}/100
+                </div>
+                <div className="mt-1 text-[11px] text-slate-400">Post-vernacular AI briefing</div>
+              </div>
+
+              <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4">
+                <div className="flex items-center justify-between text-xs text-slate-400">
+                  <span>CAT-B Expansion Rescued</span>
+                  <AlertTriangle className="h-4 w-4 text-amber-400" />
+                </div>
+                <div className="mt-2 text-2xl font-bold text-amber-400">
+                  {dashboard?.kpis.cat_b_rescued ?? 0} Leads
+                </div>
+                <div className="mt-1 text-[11px] text-slate-400">NCR, Pune, Jaipur, Bhopal</div>
+              </div>
+            </div>
+
+            {/* Live 7-Day Funnel Table */}
+            <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5">
+              <div className="mb-4 flex items-center justify-between">
+                <h2 className="text-sm font-semibold text-white">
+                  7-Day &ldquo;Open Market&rdquo; Lead Recovery Pipeline
+                </h2>
+                <button
+                  onClick={refreshDashboard}
+                  className="rounded-lg border border-slate-700 px-2.5 py-1 text-xs text-slate-300 hover:text-white"
+                >
+                  Refresh Neon DB
+                </button>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="border-b border-slate-800 text-slate-400">
+                    <tr>
+                      <th className="pb-2.5 font-medium">Student / Parent</th>
+                      <th className="pb-2.5 font-medium">Matched Campus</th>
+                      <th className="pb-2.5 font-medium">Language</th>
+                      <th className="pb-2.5 font-medium">Trust</th>
+                      <th className="pb-2.5 font-medium">Stage</th>
+                      <th className="pb-2.5 font-medium">CAC Saved</th>
+                      <th className="pb-2.5 font-medium">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800/70">
+                    {dashboard?.leads.map((lead) => (
+                      <tr key={lead.id} className="hover:bg-slate-800/30">
+                        <td className="py-3">
+                          <div className="font-semibold text-white">{lead.student_name}</div>
+                          <div className="text-[11px] text-slate-400">
+                            Parent: {lead.parent_name} · {lead.city}
+                          </div>
+                        </td>
+                        <td className="py-3">
+                          <div className="text-slate-200">{lead.campus_name}</div>
+                          <span
+                            className={`inline-block rounded px-1.5 py-0.5 text-[10px] font-semibold ${
+                              lead.campus_category === "CAT-B"
+                                ? "bg-amber-500/15 text-amber-300"
+                                : "bg-indigo-500/15 text-indigo-300"
+                            }`}
+                          >
+                            {lead.campus_category}
+                          </span>
+                        </td>
+                        <td className="py-3 text-slate-300">{lead.preferred_language}</td>
+                        <td className="py-3 font-semibold text-emerald-400">{lead.trust_score}%</td>
+                        <td className="py-3">
+                          <span className="rounded-full border border-slate-700 bg-slate-950 px-2 py-0.5 text-[11px] text-slate-200">
+                            {lead.funnel_stage}
+                          </span>
+                        </td>
+                        <td className="py-3 font-mono text-emerald-300">
+                          ₹{Number(lead.cac_saved_inr).toLocaleString("en-IN")}
+                        </td>
+                        <td className="py-3">
+                          {lead.funnel_stage !== "SEAT_RESERVED" ? (
+                            <button
+                              onClick={() => handleStageUpdate(lead.id, "SEAT_RESERVED")}
+                              className="rounded-md bg-emerald-600/20 border border-emerald-500/40 px-2 py-1 text-[11px] font-medium text-emerald-300 hover:bg-emerald-600/30"
+                            >
+                              Mark SR Paid
+                            </button>
+                          ) : (
+                            <span className="flex items-center gap-1 text-[11px] text-emerald-400">
+                              <CheckCircle2 className="h-3.5 w-3.5" /> Enrolled
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Bottom Grid: Automated WhatsApp Dispatches & Tool Audit Logs */}
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+              <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5">
+                <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-white">
+                  <Send className="h-4 w-4 text-emerald-400" />
+                  Automated Vernacular WhatsApp Dispatches
+                </h3>
+                <div className="space-y-2.5 max-h-72 overflow-y-auto pr-1">
+                  {dashboard?.dispatches.map((d) => (
+                    <div
+                      key={d.id}
+                      className="rounded-xl border border-slate-800 bg-slate-950 p-3 text-xs"
+                    >
+                      <div className="flex items-center justify-between text-[11px] text-slate-400">
+                        <span>
+                          To: <strong className="text-slate-200">{d.parent_name}</strong> ({d.language})
+                        </span>
+                        <span className="rounded bg-emerald-500/15 px-1.5 py-0.5 text-emerald-400">
+                          {d.status}
+                        </span>
+                      </div>
+                      <p className="mt-1.5 text-slate-300 leading-relaxed">{d.message_body}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5">
+                <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-white">
+                  <ExternalLink className="h-4 w-4 text-indigo-400" />
+                  Agent Tool Execution Audit Log (Neon DB)
+                </h3>
+                <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                  {dashboard?.toolLogs.map((log) => (
+                    <div
+                      key={log.id}
+                      className="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-xs"
+                    >
+                      <div>
+                        <span className="font-mono font-semibold text-indigo-400">
+                          {log.tool_name}
+                        </span>
+                        <span className="ml-2 text-[11px] text-slate-500">Lead #{log.lead_id}</span>
+                      </div>
+                      <span className="font-mono text-[11px] text-emerald-400">
+                        {log.latency_ms}ms
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </main>
+
+      {/* Floating Jarvis-Style AI Assistant Bot (Bottom-Right Corner) */}
+      {!assistantOpen && (
+        <button
+          type="button"
+          onClick={() => setAssistantOpen(true)}
+          className="fixed bottom-6 right-6 z-40 group flex cursor-pointer items-center gap-3 rounded-full border border-emerald-400/60 bg-black px-5 py-3.5 text-emerald-300 shadow-[0_0_28px_rgba(16,185,129,0.45)] transition-all hover:scale-105 hover:border-emerald-300 hover:shadow-[0_0_38px_rgba(16,185,129,0.75)]"
+        >
+          <span className="relative flex h-4 w-4">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-80"></span>
+            <span className="relative inline-flex h-4 w-4 rounded-full bg-emerald-400 shadow-[0_0_10px_#34d399]"></span>
+          </span>
+          <Bot className="h-5 w-5 text-emerald-400" />
+          <div className="text-left">
+            <div className="text-sm font-bold tracking-wide text-white">Ask NIAT AI</div>
+            <div className="text-[11px] font-medium text-emerald-400">Voice &amp; 11 Languages</div>
+          </div>
+        </button>
+      )}
+
+      {/* Full-Focus AI Assistant Pop-Up Modal (Locks Background Scroll) */}
+      {assistantOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
+          onClick={() => setAssistantOpen(false)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="flex h-[82vh] w-full max-w-2xl flex-col rounded-2xl border border-emerald-500/50 bg-black p-6 shadow-[0_0_50px_rgba(16,185,129,0.28)]"
+          >
+            {/* Modal Header */}
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-emerald-500/25 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-emerald-500/40 bg-emerald-500/15 text-emerald-400">
+                  <Bot className="h-5 w-5" />
+                  <span className="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-emerald-400 animate-pulse" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-emerald-300">
+                    NIAT AI Assistant
+                  </h3>
+                  <p className="text-xs text-emerald-400/75">
+                    Ask anything about campuses, fees, NAT exam, or UGC degree validity
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const lastBotMsg =
+                      [...generalChat].reverse().find((m) => m.role === "assistant")?.content || "";
+                    if (lastBotMsg) toggleVoiceBrief(lastBotMsg, "general-latest");
+                  }}
+                  className="flex items-center gap-1.5 rounded-lg border border-emerald-500/40 bg-zinc-950 px-3 py-1.5 text-xs font-semibold text-emerald-300 hover:border-emerald-400"
+                >
+                  {speakingId === "general-latest" ? (
+                    <>
+                      <Square className="h-3.5 w-3.5 text-rose-400" /> Stop
+                    </>
+                  ) : (
+                    <>
+                      <Volume2 className="h-3.5 w-3.5 text-emerald-400" /> Listen Latest
+                    </>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAssistantOpen(false)}
+                  className="rounded-lg border border-zinc-700 bg-zinc-900 p-1.5 text-zinc-300 hover:border-rose-500 hover:text-white"
+                  title="Close Assistant"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Language Control + Starter Chips */}
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-emerald-400/80">Reply in:</span>
+                <select
+                  value={form.preferred_language}
+                  onChange={(e) => setForm({ ...form, preferred_language: e.target.value })}
+                  className="rounded-lg border border-emerald-500/40 bg-zinc-950 px-3 py-1.5 text-xs font-medium text-emerald-300 focus:border-emerald-400 focus:outline-none"
+                >
+                  {LANGUAGES.map((lang) => (
+                    <option key={lang} value={lang}>
+                      {lang}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <span className="text-xs text-emerald-400/70">Speak or type in any language</span>
+            </div>
+
+            <div className="mt-3 flex flex-wrap gap-2">
+              {[
+                "Compare NIAT vs Scaler & Newton",
+                "Is the B.Tech degree UGC valid?",
+                "What is the NAT exam pattern & fee?",
+                "Tell me about Pune or Hyderabad colleges",
+              ].map((qChip) => (
+                <button
+                  key={qChip}
+                  type="button"
+                  onClick={() => handleGeneralAsk(qChip)}
+                  className="cursor-pointer rounded-full border border-emerald-500/35 bg-zinc-950 px-3 py-1.5 text-xs text-emerald-200 transition hover:border-emerald-400 hover:bg-emerald-950/60 hover:text-white"
+                >
+                  {qChip}
+                </button>
+              ))}
+            </div>
+
+            {/* Spacious Chat Messages Area */}
+            <div className="mt-4 flex-1 space-y-3 overflow-y-auto rounded-xl border border-emerald-500/25 bg-zinc-950 p-4">
+              {generalChat.map((m, idx) => {
+                const gVoiceId = `general-${idx}`;
+                return (
+                  <div
+                    key={idx}
+                    className={`rounded-xl px-4 py-3 text-sm leading-relaxed ${
+                      m.role === "user"
+                        ? "ml-10 border border-emerald-500/40 bg-emerald-600/25 text-emerald-50"
+                        : "mr-6 border border-zinc-800 bg-black text-zinc-100"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <span className="mr-2 font-bold text-emerald-400">
+                          {m.role === "user" ? "You:" : "NIAT AI:"}
+                        </span>
+                        {m.content}
+                      </div>
+                      {m.role === "assistant" && (
+                        <button
+                          type="button"
+                          onClick={() => toggleVoiceBrief(m.content, gVoiceId)}
+                          title="Play voice note for this reply"
+                          className="shrink-0 flex items-center gap-1 rounded-lg border border-emerald-500/40 bg-zinc-900 px-2.5 py-1 text-[11px] font-semibold text-emerald-300 hover:border-emerald-400"
+                        >
+                          {speakingId === gVoiceId ? (
+                            <>
+                              <Square className="h-3 w-3 text-rose-400" /> Stop
+                            </>
+                          ) : (
+                            <>
+                              <Volume2 className="h-3.5 w-3.5 text-emerald-400" /> Voice
+                            </>
+                          )}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Input & Voice Mic Bar */}
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleGeneralAsk();
+              }}
+              className="mt-4 flex gap-2.5"
+            >
+              <button
+                type="button"
+                onClick={() => toggleVoiceInput("general")}
+                title="Speak your question in any language"
+                className={`flex items-center justify-center gap-1.5 rounded-xl border px-3.5 py-2.5 text-sm transition ${
+                  listeningTarget === "general"
+                    ? "border-rose-500 bg-rose-500/20 text-rose-300 animate-pulse"
+                    : "border-emerald-500/40 bg-zinc-950 text-emerald-400 hover:border-emerald-400"
+                }`}
+              >
+                {listeningTarget === "general" ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+              </button>
+              <input
+                value={generalInput}
+                onChange={(e) => setGeneralInput(e.target.value)}
+                placeholder={`Speak or type in any language — AI replies in ${form.preferred_language}...`}
+                className="flex-1 rounded-xl border border-emerald-500/40 bg-zinc-950 px-4 py-2.5 text-sm text-white placeholder-zinc-500 focus:border-emerald-400 focus:outline-none"
+              />
+              <button
+                type="submit"
+                disabled={generalLoading}
+                className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-50"
+              >
+                <Send className="h-4 w-4" />
+                {generalLoading ? "..." : "Ask AI"}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

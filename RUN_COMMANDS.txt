@@ -1,0 +1,39 @@
+NIAT TrustBridge AI — Run & Deploy Commands
+===========================================
+
+1. RUN LOCALLY (Development Mode)
+---------------------------------
+Open your terminal and run:
+  cd /home/himanshu/Documents/Projects/nextwave/web
+  npm run dev
+
+Then open in Chrome/Edge:
+  http://localhost:3000
+
+
+2. RUN LOCALLY (Production Mode)
+--------------------------------
+  cd /home/himanshu/Documents/Projects/nextwave/web
+  npm run build
+  npm run start
+
+Then open:
+  http://localhost:3000
+
+
+3. STOP THE LOCAL SERVER
+------------------------
+Press Ctrl + C in the terminal where it is running.
+
+
+4. DEPLOY 24/7 TO VERCEL (Public Live Link)
+-------------------------------------------
+1. Push the `web/` folder to GitHub (or install Vercel CLI: `npm i -g vercel`).
+2. Run `cd /home/himanshu/Documents/Projects/nextwave/web && npx vercel --prod`
+   OR import the repo on https://vercel.com (set Root Directory to `web`).
+3. Add these Environment Variables in Vercel Project Settings:
+   - DATABASE_URL        (from web/.env.local)
+   - OPENROUTER_API_KEY  (from web/.env.local)
+   - OPENROUTER_MODEL    (google/gemini-2.5-flash)
+4. Once deployed on Vercel, it runs 24/7 online even when your laptop is off!
+

@@ -1,0 +1,227 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Unified Warm Ivory, Parchment & Antique-Gold Light Mode (matching Portal aesthetic) */
+.light-theme [class*="bg-slate-900"]:not(.preserve-dark):not(.preserve-dark *),
+.light-theme [class*="bg-zinc-900"]:not(.preserve-dark):not(.preserve-dark *),
+.light-theme [class*="bg-\[\#141820\]"]:not(.preserve-dark):not(.preserve-dark *),
+.light-theme [class*="bg-\[\#0B0F17\]"]:not(.preserve-dark):not(.preserve-dark *) {
+  background-color: #fffdf7 !important;
+  border-color: #d7c6a7 !important;
+  box-shadow: 0 4px 16px rgba(68, 48, 16, 0.06);
+}
+.light-theme [class*="bg-slate-950"]:not(.preserve-dark):not(.preserve-dark *),
+.light-theme [class*="bg-zinc-950"]:not(.preserve-dark):not(.preserve-dark *),
+.light-theme [class*="bg-\[\#090D16\]"]:not(.preserve-dark):not(.preserve-dark *) {
+  background-color: #f7eedb !important;
+  border-color: #d7c6a7 !important;
+}
+.light-theme [class*="bg-slate-800"]:not(.preserve-dark):not(.preserve-dark *),
+.light-theme [class*="bg-zinc-800"]:not(.preserve-dark):not(.preserve-dark *) {
+  background-color: #f3e6cb !important;
+  border-color: #d7c6a7 !important;
+}
+.light-theme [class*="bg-indigo-950"]:not(.preserve-dark):not(.preserve-dark *),
+.light-theme .bg-gradient-to-r:not(.preserve-dark):not(.preserve-dark *) {
+  background-image: none !important;
+  background-color: #faf0d7 !important;
+  border-color: #c9a24d !important;
+}
+.light-theme input:not(.preserve-dark *),
+.light-theme select:not(.preserve-dark *),
+.light-theme textarea:not(.preserve-dark *) {
+  background-color: #fffdf7 !important;
+  color: #2a1c0e !important;
+  border-color: #c9a24d !important;
+}
+.light-theme .text-white:not(.preserve-dark):not(.preserve-dark *) {
+  color: #2a1c0e !important;
+}
+.light-theme [class*="text-slate-100"]:not(.preserve-dark):not(.preserve-dark *),
+.light-theme [class*="text-slate-200"]:not(.preserve-dark):not(.preserve-dark *),
+.light-theme [class*="text-slate-300"]:not(.preserve-dark):not(.preserve-dark *),
+.light-theme [class*="text-zinc-100"]:not(.preserve-dark):not(.preserve-dark *),
+.light-theme [class*="text-zinc-200"]:not(.preserve-dark):not(.preserve-dark *),
+.light-theme [class*="text-zinc-300"]:not(.preserve-dark):not(.preserve-dark *) {
+  color: #2a1c0e !important;
+}
+.light-theme [class*="text-slate-400"]:not(.preserve-dark):not(.preserve-dark *),
+.light-theme [class*="text-slate-500"]:not(.preserve-dark):not(.preserve-dark *),
+.light-theme [class*="text-zinc-400"]:not(.preserve-dark):not(.preserve-dark *),
+.light-theme [class*="text-zinc-500"]:not(.preserve-dark):not(.preserve-dark *) {
+  color: #6b5438 !important;
+}
+.light-theme [class*="text-indigo-400"]:not(.preserve-dark):not(.preserve-dark *),
+.light-theme [class*="text-indigo-300"]:not(.preserve-dark):not(.preserve-dark *) {
+  color: #6e1b20 !important;
+}
+/* High-contrast Emerald & Amber in Light Mode */
+.light-theme [class*="text-emerald-"]:not(.preserve-dark):not(.preserve-dark *) {
+  color: #047857 !important;
+}
+.light-theme [class*="text-amber-"]:not(.preserve-dark):not(.preserve-dark *) {
+  color: #9a5b13 !important;
+}
+.light-theme [class*="border-slate-800"]:not(.preserve-dark):not(.preserve-dark *),
+.light-theme [class*="border-slate-700"]:not(.preserve-dark):not(.preserve-dark *),
+.light-theme [class*="border-zinc-800"]:not(.preserve-dark):not(.preserve-dark *),
+.light-theme [class*="border-zinc-700"]:not(.preserve-dark):not(.preserve-dark *) {
+  border-color: #d7c6a7 !important;
+}
+.light-theme .bg-indigo-600,
+.light-theme .bg-emerald-600,
+.light-theme .bg-cyan-600,
+.light-theme button.bg-\[\#13294B\],
+.light-theme button.bg-\[\#C59B48\],
+.light-theme .bg-\[\#6E1B20\] {
+  color: #ffffff !important;
+}
+.light-theme .bg-indigo-600 *,
+.light-theme .bg-emerald-600 *,
+.light-theme .bg-cyan-600 *,
+.light-theme button.bg-\[\#13294B\] *,
+.light-theme button.bg-\[\#C59B48\] *,
+.light-theme .bg-\[\#6E1B20\] * {
+  color: #ffffff !important;
+}
+.light-theme .preserve-dark .bg-white,
+.light-theme .preserve-dark .bg-white * {
+  color: #2a1c0e !important;
+}
+
+/* Hogwarts / Wizarding World Portal Styles */
+.font-hogwarts {
+  font-family: var(--font-hogwarts), Georgia, "Times New Roman", serif;
+}
+
+.hogwarts-stars {
+  background-color: #0c1020;
+  background-image:
+    radial-gradient(1.5px 1.5px at 20px 30px, rgba(255, 255, 255, 0.55), transparent),
+    radial-gradient(1px 1px at 90px 80px, rgba(230, 197, 103, 0.45), transparent),
+    radial-gradient(1.5px 1.5px at 170px 45px, rgba(255, 255, 255, 0.45), transparent),
+    radial-gradient(1px 1px at 240px 110px, rgba(165, 180, 252, 0.4), transparent),
+    radial-gradient(1.2px 1.2px at 310px 25px, rgba(255, 255, 255, 0.5), transparent),
+    radial-gradient(ellipse at top right, rgba(94, 92, 230, 0.16), transparent 55%),
+    radial-gradient(ellipse at bottom left, rgba(201, 162, 39, 0.10), transparent 55%);
+  background-size: 360px 180px, 360px 180px, 360px 180px, 360px 180px, 360px 180px, 100% 100%, 100% 100%;
+}
+
+.hogwarts-parchment {
+  background-color: #f6efe0;
+  background-image:
+    radial-gradient(ellipse at top right, rgba(201, 162, 39, 0.12), transparent 55%),
+    radial-gradient(ellipse at bottom left, rgba(184, 107, 53, 0.08), transparent 55%);
+}
+
+.hogwarts-scroll-card-light {
+  background-color: #fffdf7;
+  border: 1.5px solid #c9a24d;
+  box-shadow:
+    0 12px 32px rgba(68, 48, 16, 0.08),
+    inset 0 0 0 4px #fffdf7,
+    inset 0 0 0 5px rgba(201, 162, 77, 0.28);
+}
+
+.hogwarts-scroll-card-dark {
+  background-color: #13182b;
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  box-shadow:
+    0 16px 38px rgba(0, 0, 0, 0.48),
+    inset 0 0 0 4px #13182b,
+    inset 0 0 0 5px rgba(212, 175, 55, 0.14);
+}
+
+/* NIAT AI Assistant - Burgundy, Antique Gold & Parchment/Obsidian Edition */
+.hogwarts-assistant-light {
+  background: linear-gradient(180deg, #fffaf0 0%, #f4e5c3 100%);
+  border: 2px solid #a67c2e;
+  box-shadow:
+    0 25px 70px rgba(38, 22, 6, 0.45),
+    inset 0 0 0 5px #fffaf0,
+    inset 0 0 0 6.5px rgba(166, 124, 46, 0.45);
+}
+
+.hogwarts-assistant-dark {
+  background: linear-gradient(180deg, #181113 0%, #0d080a 100%);
+  border: 2px solid rgba(212, 175, 55, 0.65);
+  box-shadow:
+    0 25px 70px rgba(0, 0, 0, 0.8),
+    inset 0 0 0 5px #160f11,
+    inset 0 0 0 6.5px rgba(212, 175, 55, 0.25);
+}
+
+/* Sleek Theme-Matched Custom Scrollbars (Dark Emerald, Light Parchment/Gold, Portal Obsidian/Gold) */
+/* Note: Do NOT set scrollbar-width / scrollbar-color here, as Chromium disables ::-webkit-scrollbar when they are present */
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+*::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background-color: rgba(51, 65, 85, 0.65);
+  border-radius: 9999px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(100, 116, 139, 0.85);
+}
+
+.light-theme::-webkit-scrollbar-thumb,
+.light-theme *::-webkit-scrollbar-thumb {
+  background-color: rgba(166, 124, 46, 0.45);
+}
+.light-theme::-webkit-scrollbar-thumb:hover,
+.light-theme *::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(110, 27, 32, 0.72);
+}
+
+.hogwarts-stars::-webkit-scrollbar-thumb,
+.hogwarts-stars *::-webkit-scrollbar-thumb,
+.hogwarts-scroll-card-dark::-webkit-scrollbar-thumb,
+.hogwarts-scroll-card-dark *::-webkit-scrollbar-thumb,
+.hogwarts-assistant-dark::-webkit-scrollbar-thumb,
+.hogwarts-assistant-dark *::-webkit-scrollbar-thumb {
+  background-color: rgba(212, 175, 55, 0.42);
+}
+.hogwarts-stars::-webkit-scrollbar-thumb:hover,
+.hogwarts-stars *::-webkit-scrollbar-thumb:hover,
+.hogwarts-scroll-card-dark::-webkit-scrollbar-thumb:hover,
+.hogwarts-scroll-card-dark *::-webkit-scrollbar-thumb:hover,
+.hogwarts-assistant-dark::-webkit-scrollbar-thumb:hover,
+.hogwarts-assistant-dark *::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(212, 175, 55, 0.75);
+}

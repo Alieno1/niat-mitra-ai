@@ -1,0 +1,17 @@
+# Dependencies & Build
+node_modules/
+.next/
+out/
+build/
+*.tsbuildinfo
+
+# Environment & Secrets
+.env
+.env.*
+!.env.example
+
+# Vercel & OS
+.vercel/
+.DS_Store
+*.pem
+npm-debug.log*
